@@ -10,3 +10,5 @@ RewriteRule . /index.php [L]
 </IfModule>
 
 # END WordPress
+
+php_value allow_url_fopen On

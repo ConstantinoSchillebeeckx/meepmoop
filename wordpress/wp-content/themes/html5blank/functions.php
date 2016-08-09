@@ -112,9 +112,6 @@ function html5blank_header_scripts()
     wp_register_script('conditionizr', get_template_directory_uri() . '/js/lib/conditionizr-4.3.0.min.js', array(), '4.3.0');
     wp_enqueue_script('conditionizr');
 
-
-    // phylogram
-
     wp_register_script('noUi', 'https://cdn.rawgit.com/leongersen/noUiSlider/master/distribute/nouislider.min.js');
     wp_enqueue_script('noUi');
 
@@ -148,8 +145,53 @@ function html5blank_conditional_scripts()
         wp_enqueue_script('phylogram_main');
         wp_register_script('phylogram_utils', get_template_directory_uri() . '/phylogram_d3/js/utils.js');
         wp_enqueue_script('phylogram_utils');
+    } else if (is_page('financial-health-check')) {
+        wp_register_script('fh_main', get_template_directory_uri() . '/slide-flow/js/main.js');
+        wp_enqueue_script('fh_main');
+        wp_localize_script( 'fh_main', 'ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
     }
 }
+
+
+/* registered call back for AJAX action downloadJSON
+this function gets called when an AJAX request is sent to the server
+with the action: downloadJSON
+
+The var $_POST['dir'] will be set with an array of files to send back
+*/
+add_action( 'wp_ajax_downloadJSON', 'downloadJSON_callback' );
+function downloadJSON_callback() {
+
+
+    $dir = get_template_directory() . $_POST['dir'];
+
+    // recursive file search
+    $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
+    $files = array(); 
+    foreach ($rii as $file) {
+        foreach ($rii as $file) {
+            //$dat = null;
+            if (!$file->isDir() && strpos($file->getPathname(), 'json') !== -1)
+                $files[] = $file->getPathname();
+        }
+    }
+    sort($files);
+
+
+    $file_dat = [];
+    for ($i = 0; $i < count($files); $i++) {
+        $dat = json_decode(file_get_contents($files[$i]), true);
+        is_array($dat) ? $dat['file'] = str_replace(get_template_directory(), '', $files[$i]) : null;
+        $file_dat[] = $dat;
+    }
+
+    echo json_encode($file_dat);
+
+    wp_die(); // this is required to terminate immediately and return a proper response
+}
+
+
+
 
 // Load HTML5 Blank styles
 function html5blank_styles()
@@ -178,6 +220,8 @@ function html5blank_styles()
         wp_enqueue_style('noUI_styles', 'https://cdn.rawgit.com/leongersen/noUiSlider/master/distribute/nouislider.min.css');
         wp_enqueue_style('phylogram_styles', get_template_directory_uri() . '/phylogram_d3/css/phylogram_d3.css');
         wp_enqueue_style('tooltip_style', get_template_directory_uri() . '/financial_calculator/css/lib/tooltip.css');
+    } else if (is_page('financial-health-check')) {
+        wp_enqueue_style('style', get_template_directory_uri() . '/slide-flow/css/styles.css');
     }
 }
 
